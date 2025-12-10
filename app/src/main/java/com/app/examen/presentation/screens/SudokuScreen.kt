@@ -45,6 +45,39 @@ fun SudokuScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val puzzle = uiState.puzzle
+    var showResultDialog by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        if (difficulty != "Cont")
+            viewModel.loadSudoku(difficulty, width, height)
+        else
+            viewModel.loadSudoku(loadSaved = true)
+        viewModel.saveSudoku()
+    }
+
+    if (uiState.ready) {
+        showResultDialog = true
+        if (uiState.solved) {
+            viewModel.endGame()
+        } else {
+            uiState.ready = false
+        }
+    }
+
+    if (showResultDialog) {
+        val message = if (uiState.solved) "Yipppeeeee. You won." else "Not quite right. Try again."
+
+        LockedPopup(
+            message = message,
+            secondMessage = if (uiState.solved) "Main menu" else "Continue",
+            onAccept = {
+                showResultDialog = false
+                if (uiState.solved) {
+                    onBackClick()
+                }
+            }
+        )
+    }
 
     when {
         uiState.isLoading -> {
@@ -77,21 +110,15 @@ fun SudokuScreen(
         }
 
         else -> {
-            println("Puzzle: $puzzle")
-            println("Guess ${uiState.guesses}")
+            val usedWidth = if (width == 0) uiState.width else width
+            val usedHeight = if (height == 0) uiState.height else height
             if (difficulty != "Cont") {
-                LaunchedEffect(difficulty, width, height) {
-                    viewModel.loadSudoku(difficulty, width, height)
-                }
                 LaunchedEffect(puzzle) {
                     if (puzzle.isNotEmpty()) {
                         viewModel.setInitialGuesses(puzzle)
                     }
                 }
-            } else
-                viewModel.loadSudoku(loadSaved = true)
-
-            viewModel.saveSudoku()
+            }
 
             if (puzzle.isEmpty()) {
                 Column(
@@ -139,8 +166,7 @@ fun SudokuScreen(
 
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(10.dp),
+                        .fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
@@ -164,8 +190,8 @@ fun SudokuScreen(
 
                     DynamicSudokuBoard(
                         board = boardState,
-                        width = width,
-                        height = height,
+                        width = usedWidth?: 0,
+                        height = usedHeight?: 0,
                         selectedCell = selectedCell,
                         onCellClick = { r, c -> selectedCell = r to c }
                     )
@@ -213,9 +239,10 @@ fun SudokuScreen(
                             boardState = resetBoard
                         },
                         onCheckClick = {
-                            //Didn't work
+                            viewModel.checkSudoku(uiState.puzzle.toString(), usedWidth?: 0, usedHeight?: 0)
                         },
-                        numberpad = width * height
+                        numberpad = (usedWidth?: 0) * (usedHeight?: 0)
+
                     )
                 }
             }

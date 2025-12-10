@@ -125,7 +125,7 @@ fun HomeScreen(
 
         if (uiState.saved) {
             Button(
-                onClick = { onStart("Cont", 3, 3) },
+                onClick = { onStart("Cont", 0, 0) },
                 modifier = Modifier.width(200.dp)
             ) {
                 Text("Continue Sudoku")

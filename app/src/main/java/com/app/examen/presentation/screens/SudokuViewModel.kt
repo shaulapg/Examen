@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.IOException
 import javax.inject.Inject
@@ -23,7 +24,8 @@ class SudokuViewModel @Inject constructor(
     fun loadSudoku(difficulty: String? = null, width: Int? = null, height: Int? = null, loadSaved: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = SudokuUiState(
-                error = null
+                error = null,
+                isLoading = true
             )
             try {
                 if (loadSaved) {
@@ -52,6 +54,7 @@ class SudokuViewModel @Inject constructor(
                     width = width ?: 3,
                     height = height ?: 3,
                     difficulty = difficulty ?: "medium",
+                    isLoading = false,
                 )
 
             } catch (e: IOException) {
@@ -103,5 +106,26 @@ class SudokuViewModel @Inject constructor(
         val updatedGuesses = state.guesses?.map { it.toMutableList() }?.toMutableList()
         updatedGuesses?.get(row)[col] = value
         _uiState.value = state.copy(guesses = updatedGuesses)
+    }
+
+    fun checkSudoku(puzzle: String, width: Int, height: Int) {
+        viewModelScope.launch {
+            val solved = try {
+                val apiResponse = repository.getSolved(width, height, puzzle)
+                apiResponse.solution ?: _uiState.value.solution
+            } catch (e: Exception) {
+                _uiState.value.solution
+            }
+            _uiState.update { currentState ->
+                currentState.copy(
+                    solved = solved == _uiState.value.guesses,
+                    ready = true
+                )
+            }
+        }
+    }
+
+    fun endGame(){
+        preferences.clearCache()
     }
 }

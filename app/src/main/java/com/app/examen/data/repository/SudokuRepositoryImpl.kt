@@ -3,6 +3,7 @@ package com.app.examen.data.repository
 import com.app.examen.data.local.preferences.SudokuPreferences
 import com.app.examen.data.mapper.toDomain
 import com.app.examen.data.remote.api.SudokuApi
+import com.app.examen.domain.model.SolvedSudoku
 import com.app.examen.domain.model.Sudoku
 import com.app.examen.domain.repository.SudokuRepository
 import javax.inject.Inject
@@ -63,11 +64,30 @@ class SudokuRepositoryImpl
                 Sudoku(
                     puzzle = cache.puzzle,
                     solution = cache.solution,
+                    guesses = cache.guess,
                     width = cache.width,
                     height = cache.height,
                     difficulty = cache.difficulty
                 )
             } ?: throw e
+        }
+    }
+
+    override suspend fun getSolved (width: Int, height: Int, puzzle: String): SolvedSudoku {
+        return try {
+            val response = api.getSolved(
+                puzzle = puzzle,
+                width = width,
+                height = height,
+            ).toDomain()
+            val data = SolvedSudoku(
+                status = response.status,
+                solution = response.solution,
+            )
+            println(data)
+            data
+        } catch (e: Exception) {
+           throw e
         }
     }
 }
