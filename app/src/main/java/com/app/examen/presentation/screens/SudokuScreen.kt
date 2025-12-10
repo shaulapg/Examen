@@ -101,10 +101,10 @@ fun SudokuScreen(
                 Button(onClick = {
                     viewModel.loadSudoku(difficulty, width, height)
                 }) {
-                    Text("Reintentar")
+                    Text("Try again")
                 }
                 Button(onClick = onBackClick) {
-                    Text("Regresar")
+                    Text("Main menu")
                 }
             }
         }
@@ -183,7 +183,7 @@ fun SudokuScreen(
                     }
 
                     Text(
-                        "Sudoku ($difficulty)",
+                        "Sudoku (${if (difficulty != "Cont") difficulty else uiState.difficulty})",
                         style = MaterialTheme.typography.headlineSmall,
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
@@ -208,7 +208,7 @@ fun SudokuScreen(
 
                                     newBoard[r][c] = newBoard[r][c].copy(value = number)
                                     viewModel.updateGuesses(r, c, number)
-
+                                    viewModel.saveSudoku()
                                     boardState = newBoard
                                 }
                             }
@@ -221,6 +221,7 @@ fun SudokuScreen(
                                             .toMutableList()
                                     newBoard[r][c] = newBoard[r][c].copy(value = null)
                                     viewModel.updateGuesses(r, c, 0)
+                                    viewModel.saveSudoku()
                                     boardState = newBoard
                                 }
                             }
@@ -232,6 +233,7 @@ fun SudokuScreen(
                                         cell
                                     } else {
                                         viewModel.updateGuesses(cell.row, cell.col, 0)
+                                        viewModel.saveSudoku()
                                         cell.copy(value = null)
                                     }
                                 }

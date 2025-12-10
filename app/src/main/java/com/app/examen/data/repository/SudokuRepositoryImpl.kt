@@ -6,6 +6,7 @@ import com.app.examen.data.remote.api.SudokuApi
 import com.app.examen.domain.model.SolvedSudoku
 import com.app.examen.domain.model.Sudoku
 import com.app.examen.domain.repository.SudokuRepository
+import com.app.examen.presentation.screens.SudokuUiState
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -60,16 +61,10 @@ class SudokuRepositoryImpl
             )
             data
         } catch (e: Exception) {
-            preferences.getSudokuCache()?.let { cache ->
-                Sudoku(
-                    puzzle = cache.puzzle,
-                    solution = cache.solution,
-                    guesses = cache.guess,
-                    width = cache.width,
-                    height = cache.height,
-                    difficulty = cache.difficulty
-                )
-            } ?: throw e
+            val errorMessage = if (e.message?.contains("Unable to resolve host") == true)
+                "Failed to connect to the server. Check your internet connection."
+            else e.message ?: "Unknown error"
+            throw Exception(errorMessage)
         }
     }
 
