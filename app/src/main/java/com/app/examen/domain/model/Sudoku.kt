@@ -7,4 +7,6 @@ data class Sudoku (
     val width: Int? = null,
     val height: Int? = null,
     val difficulty: String? = null,
+    val solved: String? = null,
+    val status: String? = null,
 )

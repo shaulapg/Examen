@@ -7,6 +7,8 @@ data class SudokuUiState (
     val height: Int? = 3,
     val guesses: List<MutableList<Int>>? = List((width?:3) * (width?:3)) { MutableList((height?:3) * (height?:3)) { 0 } },
     val difficulty: String = "",
+    var solved: Boolean = false,
+    var ready: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
     val isSuccessful: Boolean = false,

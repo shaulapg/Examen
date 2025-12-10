@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.IOException
 import javax.inject.Inject
@@ -23,7 +24,8 @@ class SudokuViewModel @Inject constructor(
     fun loadSudoku(difficulty: String? = null, width: Int? = null, height: Int? = null, loadSaved: Boolean = false) {
         viewModelScope.launch {
             _uiState.value = SudokuUiState(
-                error = null
+                error = null,
+                isLoading = true
             )
             try {
                 if (loadSaved) {
@@ -42,17 +44,34 @@ class SudokuViewModel @Inject constructor(
                         preferences.clearCache()
                         return@launch
                     }
+                } else {
+                    try {
+                        val sudoku = repository.getSudoku(width, height, difficulty, true)
+                        _uiState.value = SudokuUiState(
+                            puzzle = sudoku.puzzle,
+                            solution = sudoku.solution,
+                            guesses = sudoku.guesses,
+                            width = width ?: 3,
+                            height = height ?: 3,
+                            difficulty = difficulty ?: "medium",
+                            isLoading = false,
+                        )
+                    } catch (e: IOException) {
+                        _uiState.value = SudokuUiState(
+                            isLoading = false,
+                            error = if (e.message?.contains("Unable to resolve host") == true) {
+                                "Failed to connect to the server. Check your internet connection."
+                            } else {
+                                e.message
+                            }
+                        )
+                    } catch (e: Exception) {
+                        _uiState.value = SudokuUiState(
+                            isLoading = false,
+                            error = e.message ?: "Unknown error"
+                        )
+                    }
                 }
-
-                val sudoku = repository.getSudoku(width, height, difficulty, !loadSaved)
-                _uiState.value = SudokuUiState(
-                    puzzle = sudoku.puzzle,
-                    solution = sudoku.solution,
-                    guesses = sudoku.guesses,
-                    width = width ?: 3,
-                    height = height ?: 3,
-                    difficulty = difficulty ?: "medium",
-                )
 
             } catch (e: IOException) {
                 _uiState.value = SudokuUiState(
@@ -86,10 +105,6 @@ class SudokuViewModel @Inject constructor(
         }
     }
 
-    fun saveGuess(guess: List<MutableList<Int>>){
-        _uiState.value = _uiState.value.copy(guesses = guess)
-    }
-
     fun setInitialGuesses(puzzle: List<List<Int?>>) {
         val newGuesses = puzzle.map { row ->
             row.map { it ?: 0 }.toMutableList()
@@ -99,9 +114,27 @@ class SudokuViewModel @Inject constructor(
     }
 
     fun updateGuesses(row: Int, col: Int, value: Int) {
-        val state = _uiState.value
-        val updatedGuesses = state.guesses?.map { it.toMutableList() }?.toMutableList()
-        updatedGuesses?.get(row)[col] = value
-        _uiState.value = state.copy(guesses = updatedGuesses)
+        _uiState.value.guesses?.get(row)?.set(col, value)
+    }
+
+    fun checkSudoku(puzzle: String, width: Int, height: Int) {
+        viewModelScope.launch {
+            val solved = try {
+                val apiResponse = repository.getSolved(width, height, puzzle)
+                apiResponse.solution ?: _uiState.value.solution
+            } catch (e: Exception) {
+                _uiState.value.solution
+            }
+            _uiState.update { currentState ->
+                currentState.copy(
+                    solved = solved == _uiState.value.guesses,
+                    ready = true
+                )
+            }
+        }
+    }
+
+    fun endGame(){
+        preferences.clearCache()
     }
 }
