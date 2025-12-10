@@ -79,7 +79,6 @@ class SudokuRepositoryImpl
                 status = response.status,
                 solution = response.solution,
             )
-            println(data)
             data
         } catch (e: Exception) {
            throw e
