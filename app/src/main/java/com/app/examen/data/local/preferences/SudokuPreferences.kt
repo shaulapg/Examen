@@ -40,8 +40,6 @@ class SudokuPreferences
                 savedAt = System.currentTimeMillis()
             )
 
-            println("Game: $game")
-
             prefs
                 .edit()
                 .putString(PreferencesConstants.KEY_SUDOKU_CACHE, gson.toJson(game))
